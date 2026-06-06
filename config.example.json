@@ -72,7 +72,6 @@
   "port": 3000,
   "logLevel": "info",
   "logPretty": true,
-  "_comment": "Ollama configuration (set USE_OLLAMA=true in .env to enable):",
-  "ollamaUrl": "http://localhost:11434",
-  "ollamaModel": "llama3.2"
+  "_comment": "NVIDIA Kimi configuration (set AI_ENABLED=true in .env to enable):",
+  "nvidiaModel": "moonshotai/kimi-k2.6"
 }

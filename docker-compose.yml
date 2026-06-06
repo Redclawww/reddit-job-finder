@@ -1,71 +1,14 @@
-version: '3.8'
-
 services:
   reddit-notifier:
     build: .
     container_name: reddit-hire-notifier
     restart: unless-stopped
+    user: "${HOST_UID:-1000}:${HOST_GID:-1000}"
     environment:
       - NODE_ENV=production
-      - STORE_TYPE=sqlite
-      - SQLITE_PATH=/app/data/seen_posts.db
-      - POLL_INTERVAL_MS=15000
-      - PORT=3000
-      - LOG_LEVEL=info
-      - LOG_PRETTY=false
-      - METRICS_ENABLED=true
+      - DATABASE_PATH=/app/data/reddit-hire-notifier.sqlite
+      - POLL_INTERVAL_MS=900000
     env_file:
       - .env
-    ports:
-      - '3000:3000'
     volumes:
       - ./data:/app/data
-    healthcheck:
-      test:
-        [
-          'CMD',
-          'wget',
-          '--no-verbose',
-          '--tries=1',
-          '--spider',
-          'http://localhost:3000/health',
-        ]
-      interval: 30s
-      timeout: 10s
-      retries: 3
-      start_period: 40s
-
-  # Optional: Prometheus for metrics collection
-  prometheus:
-    image: prom/prometheus:latest
-    container_name: prometheus
-    restart: unless-stopped
-    ports:
-      - '9090:9090'
-    volumes:
-      - ./prometheus.yml:/etc/prometheus/prometheus.yml
-    command:
-      - '--config.file=/etc/prometheus/prometheus.yml'
-      - '--storage.tsdb.path=/prometheus'
-      - '--web.console.libraries=/etc/prometheus/console_libraries'
-      - '--web.console.templates=/etc/prometheus/consoles'
-      - '--web.enable-lifecycle'
-    profiles:
-      - monitoring
-
-  # Optional: Grafana for visualization
-  grafana:
-    image: grafana/grafana:latest
-    container_name: grafana
-    restart: unless-stopped
-    ports:
-      - '3001:3000'
-    environment:
-      - GF_SECURITY_ADMIN_PASSWORD=admin
-    volumes:
-      - grafana-storage:/var/lib/grafana
-    profiles:
-      - monitoring
-
-volumes:
-  grafana-storage:

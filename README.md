@@ -12,7 +12,7 @@ A production-ready TypeScript application that scrapes Reddit for hiring posts a
                               │
                               ▼
 ┌─────────────────┐    ┌──────────────┐    ┌─────────────────┐
-│     Store       │◄───│   Matcher    │───►│  Gemini API     │
+│     Store       │◄───│   Matcher    │───►│  NVIDIA Kimi    │
 │ (memory/sqlite) │    │ (keywords+AI)│    │ (optional)      │
 └─────────────────┘    └──────────────┘    └─────────────────┘
                               │
@@ -26,12 +26,14 @@ A production-ready TypeScript application that scrapes Reddit for hiring posts a
 ### Core Components
 
 - **Scraper**: Fetches and parses Reddit HTML from old.reddit.com
-- **Matcher**: Two-pass filtering (keywords + optional AI scoring via hosted Gemma 4)
+- **Matcher**: Two-pass filtering (keywords + optional AI scoring via hosted Kimi K2.6)
 - **Notifier**: Sends formatted Discord and Telegram notifications with rate limiting
 - **Store**: Tracks seen posts to avoid duplicates (memory/SQLite/MongoDB)
 - **HTTP Client**: Robust HTTP handling with retries, backoff, and rate limiting
 
 ## 🚀 Quick Start
+
+For a free 24/7 VM deployment, use [Oracle Cloud Always Free](docs/oracle-cloud-deploy.md).
 
 ### Prerequisites
 
@@ -75,24 +77,24 @@ docker-compose up -d
 
 ### Environment Variables
 
-| Variable              | Default                  | Description                                      |
-| --------------------- | ------------------------ | ------------------------------------------------ |
-| `NODE_ENV`            | `development`            | Environment mode                                 |
-| `STORE_TYPE`          | `sqlite`                 | Storage backend (`memory`, `sqlite`, `mongodb`)  |
-| `SQLITE_PATH`         | `./data/seen_posts.db`   | SQLite database path                             |
-| `MONGODB_URI`         | -                        | MongoDB connection string                        |
-| `DISCORD_WEBHOOK_URL` | -                        | **Required**: Discord webhook URL                |
-| `GEMINI_API_KEY`      | -                        | **Optional**: Google AI Studio API key for Gemma 4 |
-| `GEMINI_MODEL`        | `gemma-4-26b-a4b-it`     | Hosted Gemma 4 model ID                          |
-| `GEMINI_THRESHOLD`    | `0.7`                    | AI confidence threshold (0.0-1.0)                |
-| `TELEGRAM_BOT_TOKEN`  | -                        | Telegram bot token                               |
-| `TELEGRAM_CHAT_ID`    | -                        | Telegram channel or chat ID                      |
-| `POLL_INTERVAL_MS`    | `15000`                  | Polling interval (15 seconds minimum)            |
-| `USER_AGENT`          | Auto-generated           | HTTP User-Agent string                           |
-| `HTTP_PROXY`          | -                        | HTTP proxy URL                                   |
-| `MAX_RETRIES`         | `3`                      | HTTP retry attempts                              |
-| `PORT`                | `3000`                   | Metrics server port                              |
-| `LOG_LEVEL`           | `info`                   | Logging level (`debug`, `info`, `warn`, `error`) |
+| Variable              | Default                | Description                                        |
+| --------------------- | ---------------------- | -------------------------------------------------- |
+| `NODE_ENV`            | `development`          | Environment mode                                   |
+| `STORE_TYPE`          | `sqlite`               | Storage backend (`memory`, `sqlite`, `mongodb`)    |
+| `SQLITE_PATH`         | `./data/seen_posts.db` | SQLite database path                               |
+| `MONGODB_URI`         | -                      | MongoDB connection string                          |
+| `DISCORD_WEBHOOK_URL` | -                      | **Required**: Discord webhook URL                  |
+| `NVIDIA_API_KEY`      | -                      | **Optional**: NVIDIA API key for Kimi K2.6 scoring |
+| `NVIDIA_MODEL`        | `moonshotai/kimi-k2.6` | NVIDIA-hosted Kimi model ID                        |
+| `MIN_NOTIFY_SCORE`    | `0.72`                 | Notification threshold (0.0-1.0)                   |
+| `TELEGRAM_BOT_TOKEN`  | -                      | Telegram bot token                                 |
+| `TELEGRAM_CHAT_ID`    | -                      | Telegram channel or chat ID                        |
+| `POLL_INTERVAL_MS`    | `15000`                | Polling interval (15 seconds minimum)              |
+| `USER_AGENT`          | Auto-generated         | HTTP User-Agent string                             |
+| `HTTP_PROXY`          | -                      | HTTP proxy URL                                     |
+| `MAX_RETRIES`         | `3`                    | HTTP retry attempts                                |
+| `PORT`                | `3000`                 | Metrics server port                                |
+| `LOG_LEVEL`           | `info`                 | Logging level (`debug`, `info`, `warn`, `error`)   |
 
 ### Subreddits and Keywords
 
@@ -114,19 +116,19 @@ Edit `src/config/defaults.ts` or use environment variables:
 
 ## 🤖 AI Enhancement
 
-### Hosted Gemma 4
+### Hosted Kimi K2.6
 
-Enable intelligent post scoring with Google's hosted Gemma 4 model on the Gemini API:
+Enable intelligent post scoring with NVIDIA-hosted Kimi K2.6:
 
 ```bash
 # Set API key
-export GEMINI_API_KEY="your_api_key_here"
+export NVIDIA_API_KEY="your_api_key_here"
 
-# Hosted Gemma 4 model from Google AI Studio / Gemini API docs
-export GEMINI_MODEL="gemma-4-26b-a4b-it"
+# NVIDIA-hosted Kimi model
+export NVIDIA_MODEL="moonshotai/kimi-k2.6"
 
-# Adjust confidence threshold (0.0 = accept all, 1.0 = very strict)
-export GEMINI_THRESHOLD="0.7"
+# Adjust notification threshold (0.0 = accept all, 1.0 = very strict)
+export MIN_NOTIFY_SCORE="0.72"
 ```
 
 **How AI Enhancement Works:**
@@ -135,10 +137,10 @@ export GEMINI_THRESHOLD="0.7"
 2. AI scores each candidate (0.0-1.0)
 3. Only posts above threshold trigger notifications
 
-**Why use hosted Gemma 4:**
+**Why use hosted Kimi K2.6:**
 
-- Uses Google's current Gemma 4 family through the Gemini API
-- No local Ollama runtime or model download required
+- Uses Kimi K2.6 through NVIDIA's chat completions endpoint
+- No local model runtime or model download required
 - Keeps the existing keyword-first, AI-second filtering flow
 
 **Benefits:**
@@ -150,7 +152,7 @@ export GEMINI_THRESHOLD="0.7"
 **Tradeoffs:**
 
 - Adds latency per post
-- Consumes Gemini API quota
+- Consumes NVIDIA API quota
 
 ## 📊 Monitoring
 
@@ -458,4 +460,5 @@ curl -X POST $DISCORD_WEBHOOK_URL \
 ---
 
 **Built with ❤️ using TypeScript, Node.js, and modern DevOps practices.**
+
 # reddit-job-finder

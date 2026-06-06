@@ -1,12 +1,10 @@
-// Test setup file
-import 'jest';
+import "jest";
 
-// Mock environment variables
-process.env.NODE_ENV = 'test';
-process.env.LOG_LEVEL = 'error';
-process.env.POLL_INTERVAL_MS = '1000';
+process.env.NODE_ENV = "test";
+process.env.LOG_LEVEL = "error";
+process.env.POLL_INTERVAL_MS = "1000";
+process.env.MAX_POST_AGE_HOURS = "48";
 
-// Mock console to avoid noise in tests
 const consoleMock = {
   log: () => {},
   warn: () => {},

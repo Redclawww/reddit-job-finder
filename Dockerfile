@@ -2,6 +2,7 @@
 FROM node:22-bookworm-slim AS builder
 
 WORKDIR /app
+ENV PUPPETEER_SKIP_DOWNLOAD=true
 
 # Copy package files
 COPY package*.json ./
@@ -15,53 +16,25 @@ COPY . .
 # Build the application
 RUN npm run build
 
+# Keep only runtime dependencies for the production image
+RUN npm prune --omit=dev && npm cache clean --force
+
 # Production stage
 FROM node:22-bookworm-slim AS production
 
 WORKDIR /app
-ENV PUPPETEER_CACHE_DIR=/home/reddit-notifier/.cache/puppeteer
-
-RUN apt-get update && apt-get install -y --no-install-recommends \
-    ca-certificates \
-    fonts-liberation \
-    libasound2 \
-    libatk-bridge2.0-0 \
-    libatk1.0-0 \
-    libcups2 \
-    libdbus-1-3 \
-    libgbm1 \
-    libglib2.0-0 \
-    libgtk-3-0 \
-    libnspr4 \
-    libnss3 \
-    libx11-6 \
-    libx11-xcb1 \
-    libxcb1 \
-    libxcomposite1 \
-    libxdamage1 \
-    libxext6 \
-    libxfixes3 \
-    libxrandr2 \
-    libxss1 \
-    libxtst6 \
-    xdg-utils \
-  && rm -rf /var/lib/apt/lists/*
+ENV PUPPETEER_SKIP_DOWNLOAD=true
 
 # Create non-root user
 RUN groupadd --gid 1001 nodejs && \
     useradd --uid 1001 --gid nodejs --create-home reddit-notifier
 
-RUN mkdir -p /home/reddit-notifier/.cache/puppeteer && \
-    chown -R reddit-notifier:nodejs /home/reddit-notifier
-
 # Copy package files
 COPY package*.json ./
 
-# Install only production dependencies
-RUN npm ci --omit=dev && npm cache clean --force
-
-# Copy built application
+# Copy built application and pruned runtime dependencies
 COPY --from=builder /app/dist ./dist
+COPY --from=builder /app/node_modules ./node_modules
 
 # Create data directory
 RUN mkdir -p /app/data && \
@@ -70,18 +43,10 @@ RUN mkdir -p /app/data && \
 # Switch to non-root user
 USER reddit-notifier
 
-# Health check
-HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
-    CMD node -e "require('http').get('http://localhost:3000/health', (res) => { process.exit(res.statusCode === 200 ? 0 : 1) })" || exit 1
-
-# Expose port
-EXPOSE 3000
-
 # Set default environment
 ENV NODE_ENV=production
-ENV STORE_TYPE=sqlite
-ENV SQLITE_PATH=/app/data/seen_posts.db
-ENV PORT=3000
+ENV DATABASE_PATH=/app/data/reddit-hire-notifier.sqlite
+ENV POLL_INTERVAL_MS=900000
 
 # Start the application
 CMD ["node", "dist/index.js"]
